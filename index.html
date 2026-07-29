@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#08051d" />
+<meta name="description" content="네온 스타일의 설치 가능한 2048 퍼즐 게임" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192.png" />
+<link rel="apple-touch-icon" href="./assets/icon-192.png" />
 <title>NEON 2048</title>
 <style>
   :root { color-scheme: dark; }
@@ -127,6 +134,7 @@
     gap: 12px;
   }
 
+  .control-buttons { display: flex; gap: 8px; }
   .hint { color: #aaa6c8; font-size: 13px; }
 
   button {
@@ -205,13 +213,45 @@
 
   <footer class="controls">
     <div class="hint">방향키 / WASD / 화면 스와이프로 이동</div>
-    <button id="restart">새 게임</button>
+    <div class="control-buttons">
+      <button id="installApp" type="button" hidden>앱 설치</button>
+      <button id="restart" type="button">새 게임</button>
+    </div>
   </footer>
 </main>
 
 <script>
 (() => {
   'use strict';
+
+  const installButton = document.getElementById('installApp');
+  let installPrompt = null;
+
+  if ('serviceWorker' in navigator) {
+    addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js')
+        .catch(error => console.error('Service worker registration failed:', error));
+    });
+  }
+
+  addEventListener('beforeinstallprompt', event => {
+    event.preventDefault();
+    installPrompt = event;
+    installButton.hidden = false;
+  });
+
+  installButton.addEventListener('click', async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    installPrompt = null;
+    installButton.hidden = true;
+  });
+
+  addEventListener('appinstalled', () => {
+    installPrompt = null;
+    installButton.hidden = true;
+  });
 
   const SIZE = 4;
   const MOVE_MS = 155;
